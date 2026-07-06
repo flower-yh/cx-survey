@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CX 설문 문항 관리</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --purple:#6C5CE7;--purple-dark:#3C3489;--purple-soft:#7F77DD;--purple-bg:#EEEDFE;
+  --text:#26215C;--text2:#5B5680;--text3:#9793B5;--border:#E7E4F5;--border-strong:#D5D0EC;
+  --white:#fff;--page-bg:#F5F4FB;--red:#E24B4A;--green:#16a34a;
+}
+html,body{background:var(--page-bg);}
+body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;color:var(--text);line-height:1.5;padding:0 0 120px;}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px;}
+.header{background:linear-gradient(135deg,#EEEDFE 0%,#E1F5EE 100%);padding:22px 24px;margin-bottom:20px;border-radius:0 0 20px 20px;}
+.brand{display:flex;align-items:center;gap:9px;margin-bottom:12px;}
+.brand-logo{width:28px;height:28px;border-radius:8px;background:var(--purple);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;}
+.header h1{font-size:20px;font-weight:600;color:#26215C;}
+.header p{font-size:13px;color:var(--purple-soft);margin-top:4px;}
+
+/* 로그인 */
+.login{max-width:360px;margin:60px auto;background:var(--white);border:1px solid var(--border);border-radius:16px;padding:28px 24px;text-align:center;}
+.login h2{font-size:17px;margin-bottom:6px;}
+.login p{font-size:13px;color:var(--text3);margin-bottom:18px;}
+.login input{width:100%;padding:12px 14px;border:1px solid var(--border-strong);border-radius:11px;font-size:15px;font-family:inherit;margin-bottom:12px;}
+.login input:focus{outline:none;border-color:var(--purple);}
+.login .err{color:var(--red);font-size:12.5px;margin-bottom:10px;min-height:16px;}
+
+/* 문항 카드 */
+.q-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;}
+.q-card-top{display:flex;gap:8px;align-items:center;margin-bottom:12px;}
+.q-idx{width:26px;height:26px;border-radius:7px;background:var(--purple-bg);color:var(--purple-dark);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.q-card-top .move{margin-left:auto;display:flex;gap:4px;}
+.icon-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border-strong);background:var(--white);cursor:pointer;font-size:14px;color:var(--text2);display:flex;align-items:center;justify-content:center;}
+.icon-btn:hover{border-color:var(--purple-soft);color:var(--purple);}
+.icon-btn.del:hover{border-color:var(--red);color:var(--red);}
+.field{margin-bottom:10px;}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--text3);margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1px solid var(--border-strong);border-radius:10px;font-size:14px;font-family:inherit;color:var(--text);background:var(--white);}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--purple-soft);}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.opts-hint{font-size:11.5px;color:var(--text3);margin-top:4px;}
+.chk{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text2);cursor:pointer;padding-top:26px;}
+.chk input{width:auto;}
+
+.add-btn{width:100%;padding:14px;border:1.5px dashed var(--border-strong);border-radius:13px;background:var(--white);color:var(--purple);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px;}
+.add-btn:hover{border-color:var(--purple);background:var(--purple-bg);}
+
+/* 하단 고정 저장바 */
+.savebar{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);padding:14px 16px;box-shadow:0 -2px 12px rgba(60,52,137,.06);}
+.savebar-inner{max-width:760px;margin:0 auto;display:flex;gap:10px;align-items:center;}
+.save-status{font-size:13px;color:var(--text3);flex:1;}
+.save-status.ok{color:var(--green);}
+.save-status.err{color:var(--red);}
+.btn{padding:13px 22px;border-radius:12px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+.btn-ghost{background:var(--white);border:1px solid var(--border-strong);color:var(--text2);}
+.btn-save{background:var(--purple);color:#fff;}
+.btn-save:disabled{opacity:.5;cursor:not-allowed;}
+
+.type-badge{font-size:11px;padding:2px 8px;border-radius:6px;background:var(--purple-bg);color:var(--purple-dark);font-weight:600;}
+.hidden{display:none!important;}
+.loading{text-align:center;padding:60px;color:var(--text3);}
+.spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--purple);border-radius:50%;margin:0 auto 14px;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.preview-link{font-size:12.5px;color:var(--purple);text-decoration:none;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="wrap" style="padding:0;">
+    <div class="brand"><div class="brand-logo">S</div><span style="font-weight:600;color:var(--purple-dark);">flow CX 관리자</span></div>
+    <h1>설문 문항 관리</h1>
+    <p>문항을 편집하고 저장하면 설문 페이지에 바로 반영됩니다.</p>
+  </div>
+</div>
+
+<!-- 로그인 -->
+<div id="loginView" class="login">
+  <h2>관리자 인증</h2>
+  <p>문항 편집을 위해 비밀번호를 입력하세요.</p>
+  <input type="password" id="pw" placeholder="비밀번호" onkeydown="if(event.key==='Enter')login()">
+  <div class="err" id="loginErr"></div>
+  <button class="btn btn-save" style="width:100%;" onclick="login()">확인</button>
+</div>
+
+<!-- 편집 -->
+<div id="editView" class="wrap hidden">
+  <div id="loadingQ" class="loading"><div class="spinner"></div>문항을 불러오는 중...</div>
+  <div id="qList"></div>
+  <button class="add-btn" id="addBtn" onclick="addQuestion()">+ 문항 추가</button>
+</div>
+
+<!-- 저장바 -->
+<div id="saveBar" class="savebar hidden">
+  <div class="savebar-inner">
+    <div class="save-status" id="saveStatus">변경사항을 저장하면 설문에 반영됩니다</div>
+    <a class="preview-link" id="previewLink" href="#" target="_blank">설문 미리보기 ↗</a>
+    <button class="btn btn-save" id="saveBtn" onclick="save()">저장하기</button>
+  </div>
+</div>
+
+<script>
+// ⚠️ GAS 웹앱 URL을 붙여넣으세요 (survey.html과 동일)
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzU99LMYBw9I4__xUnKyfFFTH56dFt_rdDyHCePkRFUG0bOkJP2knQOgASiyk4guh1DRQ/exec';
+
+let PASSWORD = '';
+let questions = [];
+const TYPES = [
+  {v:'radio', label:'단일 선택 (라디오)'},
+  {v:'check', label:'복수 선택 (체크박스)'},
+  {v:'scale', label:'척도 1~5'},
+  {v:'nps',   label:'척도 0~10 (NPS)'},
+  {v:'text',  label:'주관식 (긴 답변)'}
+];
+
+function login(){
+  const pw = document.getElementById('pw').value.trim();
+  if(!pw){ document.getElementById('loginErr').textContent='비밀번호를 입력하세요.'; return; }
+  PASSWORD = pw;
+  document.getElementById('loginView').classList.add('hidden');
+  document.getElementById('editView').classList.remove('hidden');
+  document.getElementById('saveBar').classList.remove('hidden');
+  // 미리보기 링크 = survey.html (같은 폴더 가정)
+  document.getElementById('previewLink').href = 'survey.html';
+  loadQuestions();
+}
+
+function loadQuestions(){
+  fetch(GAS_URL + '?action=questions')
+    .then(r=>r.json())
+    .then(data=>{
+      questions = data.questions || [];
+      document.getElementById('loadingQ').classList.add('hidden');
+      render();
+    })
+    .catch(()=>{ document.getElementById('loadingQ').innerHTML='불러오기 실패. URL을 확인하세요.'; });
+}
+
+function render(){
+  const list = document.getElementById('qList');
+  list.innerHTML = '';
+  questions.forEach((q,i)=>{
+    const showOpts = (q.type==='radio'||q.type==='check');
+    const card = document.createElement('div');
+    card.className='q-card';
+    card.innerHTML = `
+      <div class="q-card-top">
+        <div class="q-idx">${i+1}</div>
+        <span class="type-badge">${typeLabel(q.type)}</span>
+        <div class="move">
+          <button class="icon-btn" onclick="moveUp(${i})" ${i===0?'disabled style=opacity:.3':''}>↑</button>
+          <button class="icon-btn" onclick="moveDown(${i})" ${i===questions.length-1?'disabled style=opacity:.3':''}>↓</button>
+          <button class="icon-btn del" onclick="removeQ(${i})">✕</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>질문</label>
+        <input type="text" value="${escAttr(q.question)}" oninput="upd(${i},'question',this.value)" placeholder="질문을 입력하세요">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>섹션 (같은 이름끼리 묶임)</label>
+          <input type="text" value="${escAttr(q.section)}" oninput="upd(${i},'section',this.value)" placeholder="예: 기술 문의 대응">
+        </div>
+        <div class="field">
+          <label>유형</label>
+          <select onchange="updType(${i},this.value)">
+            ${TYPES.map(t=>`<option value="${t.v}" ${q.type===t.v?'selected':''}>${t.label}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field opts-field ${showOpts?'':'hidden'}">
+          <label>보기 (Enter 또는 | 로 구분)</label>
+          <textarea rows="3" oninput="updOpts(${i},this.value)" placeholder="보기1&#10;보기2&#10;보기3">${(q.options||[]).join('\n')}</textarea>
+          <div class="opts-hint">한 줄에 하나씩 입력하세요</div>
+        </div>
+        <label class="chk">
+          <input type="checkbox" ${q.required?'checked':''} onchange="upd(${i},'required',this.checked)">
+          필수 응답
+        </label>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function typeLabel(v){ const t=TYPES.find(x=>x.v===v); return t?t.label.split(' ')[0]:v; }
+function upd(i,key,val){ questions[i][key]=val; markDirty(); }
+function updType(i,val){
+  questions[i].type=val;
+  if(val!=='radio'&&val!=='check') questions[i].options=[];
+  markDirty(); render();
+}
+function updOpts(i,val){
+  questions[i].options = val.split(/[\n|]/).map(s=>s.trim()).filter(Boolean);
+  markDirty();
+}
+function addQuestion(){
+  questions.push({id:'q'+Date.now(),section:'새 섹션',question:'',type:'radio',options:['보기 1','보기 2'],required:true});
+  markDirty(); render();
+  window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+}
+function removeQ(i){ if(confirm('이 문항을 삭제할까요?')){ questions.splice(i,1); markDirty(); render(); } }
+function moveUp(i){ if(i>0){ [questions[i-1],questions[i]]=[questions[i],questions[i-1]]; markDirty(); render(); } }
+function moveDown(i){ if(i<questions.length-1){ [questions[i+1],questions[i]]=[questions[i],questions[i+1]]; markDirty(); render(); } }
+
+function markDirty(){
+  const s=document.getElementById('saveStatus');
+  s.className='save-status'; s.textContent='● 저장되지 않은 변경사항이 있습니다';
+}
+
+function save(){
+  // 유효성: 질문 비어있는지
+  const empty = questions.findIndex(q=>!q.question || !q.question.trim());
+  if(empty>=0){ alert((empty+1)+'번 문항의 질문이 비어 있습니다.'); return; }
+
+  const btn=document.getElementById('saveBtn');
+  const s=document.getElementById('saveStatus');
+  btn.disabled=true; s.className='save-status'; s.textContent='저장 중...';
+
+  const fd=new FormData();
+  fd.append('action','save_questions');
+  fd.append('password',PASSWORD);
+  fd.append('questions',JSON.stringify(questions));
+
+  fetch(GAS_URL,{method:'POST',body:fd})
+    .then(r=>r.json())
+    .then(res=>{
+      btn.disabled=false;
+      if(res.result==='success'){
+        s.className='save-status ok'; s.textContent='✓ 저장되었습니다. 설문에 반영됨';
+      }else{
+        s.className='save-status err'; s.textContent='✕ '+(res.message||'저장 실패');
+      }
+    })
+    .catch(()=>{ btn.disabled=false; s.className='save-status err'; s.textContent='✕ 통신 오류'; });
+}
+
+function escAttr(s){return String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+</script>
+</body>
+</html>
